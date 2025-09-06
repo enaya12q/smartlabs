@@ -2,18 +2,11 @@ import os
 import sqlite3
 import hashlib
 import hmac
-import os
-import sqlite3
-import hashlib
-import hmac
 import time
 import requests
 from flask import Flask, request, jsonify, render_template, session, url_for
 from datetime import datetime
 from typing import Dict, Any, Optional
-
-app = Flask(__name__)
-app.secret_key = os.urandom(24) # Replace with a strong, unique secret key in production
 
 # --- Configuration ---
 TELEGRAM_BOT_TOKEN = "8216330677:AAHD1xOCs8OJd1PRZ9XZPIrFKsKIj1l8dHc"
@@ -61,6 +54,13 @@ def init_db() -> None:
     ''')
     conn.commit()
     conn.close()
+
+app = Flask(__name__)
+app.secret_key = os.urandom(24) # Replace with a strong, unique secret key in production
+
+# Initialize the database when the app starts
+with app.app_context():
+    init_db()
 
 # --- Telegram Bot Functions ---
 def send_telegram_message(chat_id: str, message: str) -> Optional[Dict[str, Any]]:
