@@ -1,0 +1,133 @@
+body {
+    font-family: 'Arial', sans-serif;
+    background-color: #1a1a1a;
+    /* Dark background */
+    color: #e0e0e0;
+    /* Light grey text */
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+
+header {
+    background-color: #000;
+    width: 100%;
+    padding: 20px 0;
+    text-align: center;
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
+    /* Gold neon shadow */
+    margin-bottom: 20px;
+}
+
+h1 {
+    color: #ffd700;
+    /* Gold color */
+    text-shadow: 0 0 10px #ffd700, 0 0 20px #ffd700, 0 0 30px #ffd700;
+    /* Neon effect */
+}
+
+main {
+    background-color: #2a2a2a;
+    padding: 40px;
+    border-radius: 10px;
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.7);
+    /* Stronger gold neon shadow */
+    text-align: center;
+    width: 80%;
+    max-width: 600px;
+    margin-bottom: 20px;
+}
+
+section {
+    margin-bottom: 30px;
+}
+
+h2,
+h3 {
+    color: #ffd700;
+    text-shadow: 0 0 8px #ffd700;
+}
+
+button {
+    background-color: #ffd700;
+    /* Gold button */
+    color: #1a1a1a;
+    border: none;
+    padding: 12px 25px;
+    margin: 10px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: bold;
+    transition: all 0.3s ease;
+    box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+}
+
+button:hover {
+    background-color: #e6c200;
+    /* Darker gold on hover */
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.8);
+    transform: translateY(-2px);
+}
+
+input[type="text"] {
+    width: calc(100% - 20px);
+    padding: 10px;
+    margin: 10px 0;
+    border: 1px solid #ffd700;
+    background-color: #3a3a3a;
+    color: #e0e0e0;
+    border-radius: 5px;
+    box-shadow: 0 0 5px rgba(255, 215, 0, 0.3);
+}
+
+input[type="text"]:focus {
+    outline: none;
+    border-color: #e6c200;
+    box-shadow: 0 0 8px rgba(255, 215, 0, 0.6);
+}
+
+#telegram-login-button {
+    margin-top: 20px;
+    display: flex;
+    justify-content: center;
+}
+
+#dashboard p {
+    font-size: 1.1em;
+    margin: 10px 0;
+}
+
+#dashboard span {
+    color: #ffd700;
+    font-weight: bold;
+}
+
+#ad-display {
+    background-color: #3a3a3a;
+    padding: 20px;
+    border-radius: 8px;
+    margin-top: 20px;
+    box-shadow: 0 0 10px rgba(255, 215, 0, 0.4);
+}
+
+#withdrawal-form {
+    background-color: #3a3a3a;
+    padding: 20px;
+    border-radius: 8px;
+    margin-top: 20px;
+    box-shadow: 0 0 10px rgba(255, 215, 0, 0.4);
+}
+
+footer {
+    margin-top: auto;
+    padding: 20px;
+    color: #888;
+    font-size: 0.9em;
+    width: 100%;
+    text-align: center;
+}
