@@ -137,7 +137,7 @@ def admin_required(f):
     return decorated_function
 
 @app.route('/api/login', methods=['POST'])
-def telegram_login() -> tuple[Dict[str, Any], int] | Dict[str, Any]:
+async def telegram_login() -> tuple[Dict[str, Any], int] | Dict[str, Any]:
     data: Dict[str, Any] = request.json
     if not data:
         return jsonify({"success": False, "message": "No data provided"}), 400
@@ -293,7 +293,7 @@ async def telegram_webhook() -> tuple[Dict[str, Any], int]:
     return jsonify({"status": "ok"}), 200
 
 @app.route('/api/view_ad', methods=['POST'])
-def view_ad() -> tuple[Dict[str, Any], int] | Dict[str, Any]:
+async def view_ad() -> tuple[Dict[str, Any], int] | Dict[str, Any]:
     if 'user_id' not in session:
         return jsonify({"success": False, "message": "Not authenticated"}), 401
 
@@ -345,7 +345,7 @@ def view_ad() -> tuple[Dict[str, Any], int] | Dict[str, Any]:
     })
 
 @app.route('/api/withdraw', methods=['POST'])
-def withdraw() -> tuple[Dict[str, Any], int] | Dict[str, Any]:
+async def withdraw() -> tuple[Dict[str, Any], int] | Dict[str, Any]:
     if 'user_id' not in session:
         return jsonify({"success": False, "message": "Not authenticated"}), 401
 
