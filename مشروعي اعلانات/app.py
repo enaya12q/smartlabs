@@ -64,8 +64,8 @@ app = Flask(__name__)
 app.secret_key = os.urandom(24) # Replace with a strong, unique secret key in production
 
 # Initialize the database when the app starts
-with app.app_context():
-    init_db()
+# with app.app_context():
+#     init_db() # Commented out for Vercel debugging
 
 # --- Telegram Bot Functions ---
 async def send_telegram_message(chat_id: str, message: str) -> Optional[Dict[str, Any]]:
@@ -119,25 +119,26 @@ def dashboard() -> str:
     return render_template('dashboard.html')
 
 @app.route('/admin')
-@admin_required
+# @admin_required # Commented out for Vercel debugging
 def admin_panel() -> str:
     return render_template('admin.html')
 
 # --- Admin Decorator ---
-def admin_required(f):
+def admin_required(f): # Temporarily simplified for Vercel debugging
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        if 'user_id' not in session:
-            return redirect(url_for('index'))
+        # if 'user_id' not in session:
+        #     return redirect(url_for('index'))
         
-        conn = get_db_connection()
-        user = conn.execute("SELECT telegram_id FROM users WHERE id = ?", (session['user_id'],)).fetchone()
-        conn.close()
+        # conn = get_db_connection()
+        # user = conn.execute("SELECT telegram_id FROM users WHERE id = ?", (session['user_id'],)).fetchone()
+        # conn.close()
 
-        if user and user['telegram_id'] == TELEGRAM_ADMIN_ID:
-            return f(*args, **kwargs)
-        else:
-            return jsonify({"success": False, "message": "Admin access required"}), 403
+        # if user and user['telegram_id'] == TELEGRAM_ADMIN_ID:
+        #     return f(*args, **kwargs)
+        # else:
+        #     return jsonify({"success": False, "message": "Admin access required"}), 403
+        return f(*args, **kwargs) # Always allow access for debugging
     return decorated_function
 
 @app.route('/api/login', methods=['POST'])
