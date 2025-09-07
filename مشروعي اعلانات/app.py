@@ -498,7 +498,3 @@ def admin_update_withdrawal_status(withdrawal_id: int, status: str) -> tuple[Dic
 def add_security_headers(response):
     response.headers['Content-Security-Policy'] = "frame-ancestors 'self' https://oauth.telegram.org http://127.0.0.1:5000;"
     return response
-
-if __name__ == '__main__':
-    init_db()
-    app.run(host='0.0.0.0', port=5000, debug=True)
