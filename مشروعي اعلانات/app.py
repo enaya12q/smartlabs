@@ -137,7 +137,7 @@ def admin_required(f):
     return decorated_function
 
 @app.route('/api/login', methods=['POST'])
-async def telegram_login() -> tuple[Dict[str, Any], int] | Dict[str, Any]:
+def telegram_login() -> tuple[Dict[str, Any], int] | Dict[str, Any]:
     data: Dict[str, Any] = request.json
     if not data:
         return jsonify({"success": False, "message": "No data provided"}), 400
@@ -186,7 +186,7 @@ async def telegram_login() -> tuple[Dict[str, Any], int] | Dict[str, Any]:
         conn.commit()
         user = cursor.execute("SELECT * FROM users WHERE telegram_id = ?", (telegram_id,)).fetchone()
         admin_message = f"New user registered: {username or first_name} (ID: {telegram_id})"
-        await send_telegram_message(TELEGRAM_ADMIN_CHAT_ID, admin_message)
+        asyncio.run(send_telegram_message(TELEGRAM_ADMIN_CHAT_ID, admin_message))
 
         welcome_message = (
             "👋 Welcome to Smart Coin Labs!\n"
@@ -194,7 +194,7 @@ async def telegram_login() -> tuple[Dict[str, Any], int] | Dict[str, Any]:
             "💎 Earn $0.50 TON for every 50 ads watched!\n"
             "Click /start to begin now."
         )
-        await send_telegram_message(str(telegram_id), welcome_message)
+        asyncio.run(send_telegram_message(str(telegram_id), welcome_message))
     else:
         # Existing user login, update details if necessary
         cursor.execute(
@@ -293,7 +293,7 @@ async def telegram_webhook() -> tuple[Dict[str, Any], int]:
     return jsonify({"status": "ok"}), 200
 
 @app.route('/api/view_ad', methods=['POST'])
-async def view_ad() -> tuple[Dict[str, Any], int] | Dict[str, Any]:
+def view_ad() -> tuple[Dict[str, Any], int] | Dict[str, Any]:
     if 'user_id' not in session:
         return jsonify({"success": False, "message": "Not authenticated"}), 401
 
@@ -345,7 +345,7 @@ async def view_ad() -> tuple[Dict[str, Any], int] | Dict[str, Any]:
     })
 
 @app.route('/api/withdraw', methods=['POST'])
-async def withdraw() -> tuple[Dict[str, Any], int] | Dict[str, Any]:
+def withdraw() -> tuple[Dict[str, Any], int] | Dict[str, Any]:
     if 'user_id' not in session:
         return jsonify({"success": False, "message": "Not authenticated"}), 401
 
@@ -395,7 +395,7 @@ async def withdraw() -> tuple[Dict[str, Any], int] | Dict[str, Any]:
         f"⏳ Status: Pending\n"
         f"Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
     )
-    await send_telegram_message(TELEGRAM_ADMIN_CHAT_ID, message)
+    asyncio.run(send_telegram_message(TELEGRAM_ADMIN_CHAT_ID, message))
 
     updated_user = cursor.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
     conn.close()
