@@ -4,14 +4,18 @@ import hashlib
 import hmac
 import time
 import requests
-from flask import Flask, request, jsonify, render_template, session, url_for
+from flask import Flask, request, jsonify, render_template, session, url_for, redirect
 from datetime import datetime
 from typing import Dict, Any, Optional
+from functools import wraps # Import wraps for decorator
+from telegram import Bot, Update
+from telegram.ext import Dispatcher, CommandHandler, CallbackContext
 
 # --- Configuration ---
-TELEGRAM_BOT_TOKEN = "8216330677:AAHD1xOCs8OJd1PRZ9XZPIrFKsKIj1l8dHc"
-TELEGRAM_ADMIN_CHAT_ID = "7645815913"
-TELEGRAM_BOT_USERNAME = "SMARTLAB3Sbot"
+TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "YOUR_TELEGRAM_BOT_TOKEN_HERE")
+TELEGRAM_ADMIN_CHAT_ID = os.environ.get("TELEGRAM_ADMIN_CHAT_ID", "YOUR_TELEGRAM_ADMIN_CHAT_ID_HERE")
+TELEGRAM_ADMIN_ID = int(os.environ.get("TELEGRAM_ADMIN_ID", "YOUR_ADMIN_TELEGRAM_ID_HERE")) # Admin's Telegram ID
+TELEGRAM_BOT_USERNAME = "SMARTLAB3Sbot" # This can remain hardcoded or also be an env var
 
 DATABASE = 'smartcoinlabs.db'
 
@@ -88,6 +92,46 @@ def generate_referral_code(telegram_id: int) -> str:
 def index() -> str:
     return render_template('index.html', bot_username=TELEGRAM_BOT_USERNAME)
 
+@app.route('/about')
+def about() -> str:
+    return render_template('about.html')
+
+@app.route('/whitepaper')
+def whitepaper() -> str:
+    return render_template('whitepaper.html')
+
+@app.route('/privacy-policy')
+def privacy_policy() -> str:
+    return render_template('privacy_policy.html')
+
+@app.route('/dashboard')
+def dashboard() -> str:
+    if 'user_id' not in session:
+        return redirect(url_for('index')) # Redirect to home if not logged in
+    return render_template('dashboard.html')
+
+@app.route('/admin')
+@admin_required
+def admin_panel() -> str:
+    return render_template('admin.html')
+
+# --- Admin Decorator ---
+def admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session:
+            return redirect(url_for('index'))
+        
+        conn = get_db_connection()
+        user = conn.execute("SELECT telegram_id FROM users WHERE id = ?", (session['user_id'],)).fetchone()
+        conn.close()
+
+        if user and user['telegram_id'] == TELEGRAM_ADMIN_ID:
+            return f(*args, **kwargs)
+        else:
+            return jsonify({"success": False, "message": "Admin access required"}), 403
+    return decorated_function
+
 @app.route('/api/login', methods=['POST'])
 def telegram_login() -> tuple[Dict[str, Any], int] | Dict[str, Any]:
     data: Dict[str, Any] = request.json
@@ -137,8 +181,16 @@ def telegram_login() -> tuple[Dict[str, Any], int] | Dict[str, Any]:
         )
         conn.commit()
         user = cursor.execute("SELECT * FROM users WHERE telegram_id = ?", (telegram_id,)).fetchone()
-        message = f"New user registered: {username or first_name} (ID: {telegram_id})"
-        send_telegram_message(TELEGRAM_ADMIN_CHAT_ID, message)
+        admin_message = f"New user registered: {username or first_name} (ID: {telegram_id})"
+        send_telegram_message(TELEGRAM_ADMIN_CHAT_ID, admin_message)
+
+        welcome_message = (
+            "👋 Welcome to Smart Coin Labs!\n"
+            "📺 Watch ads and earn TON easily.\n"
+            "💎 Earn $0.50 TON for every 50 ads watched!\n"
+            "Click /start to begin now."
+        )
+        send_telegram_message(str(telegram_id), welcome_message)
     else:
         # Existing user login, update details if necessary
         cursor.execute(
@@ -164,6 +216,79 @@ def telegram_login() -> tuple[Dict[str, Any], int] | Dict[str, Any]:
         }
     })
 
+@app.route('/api/user_data', methods=['GET'])
+def get_user_data() -> tuple[Dict[str, Any], int] | Dict[str, Any]:
+    if 'user_id' not in session:
+        return jsonify({"success": False, "message": "Not authenticated"}), 401
+
+    user_id: int = session['user_id']
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    user = cursor.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
+    conn.close()
+
+    if not user:
+        return jsonify({"success": False, "message": "User not found"}), 404
+
+    return jsonify({
+        "success": True,
+        "user": {
+            "id": user['id'],
+            "telegram_id": user['telegram_id'],
+            "first_name": user['first_name'],
+            "username": user['username'],
+            "earnings": user['earnings'],
+            "adsViewed": user['ads_viewed'],
+            "referralLink": url_for('index', ref=user['referral_code'], _external=True)
+        }
+    })
+
+# --- Telegram Bot Webhook ---
+bot = Bot(TELEGRAM_BOT_TOKEN)
+dispatcher = Dispatcher(bot, None, workers=0)
+
+def start_command(update: Update, context: CallbackContext) -> None:
+    if not update.effective_user:
+        print("No effective user in update.")
+        return
+
+    user_telegram_id = update.effective_user.id
+    user_first_name = update.effective_user.first_name
+    user_username = update.effective_user.username
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    user = cursor.execute("SELECT * FROM users WHERE telegram_id = ?", (user_telegram_id,)).fetchone()
+
+    if user is None:
+        # This scenario should ideally be handled by the web login, but as a fallback
+        # or for direct bot interaction, we can register them here.
+        referral_code = generate_referral_code(user_telegram_id)
+        cursor.execute(
+            "INSERT INTO users (telegram_id, first_name, username, referral_code) VALUES (?, ?, ?, ?)",
+            (user_telegram_id, user_first_name, user_username, referral_code)
+        )
+        conn.commit()
+        admin_message = f"New user registered via bot: {user_username or user_first_name} (ID: {user_telegram_id})"
+        send_telegram_message(TELEGRAM_ADMIN_CHAT_ID, admin_message)
+
+    welcome_message = (
+        "👋 Welcome to Smart Coin Labs!\n"
+        "📺 Watch ads and earn TON easily.\n"
+        "💎 Earn $0.50 TON for every 50 ads watched!\n"
+        "Click /start to begin now."
+    )
+    send_telegram_message(str(user_telegram_id), welcome_message)
+    conn.close()
+
+dispatcher.add_handler(CommandHandler("start", start_command))
+
+@app.route('/telegram-webhook', methods=['POST'])
+def telegram_webhook() -> tuple[Dict[str, Any], int]:
+    update = Update.de_json(request.get_json(force=True), bot)
+    dispatcher.process_update(update)
+    return jsonify({"status": "ok"}), 200
+
 @app.route('/api/view_ad', methods=['POST'])
 def view_ad() -> tuple[Dict[str, Any], int] | Dict[str, Any]:
     if 'user_id' not in session:
@@ -183,7 +308,7 @@ def view_ad() -> tuple[Dict[str, Any], int] | Dict[str, Any]:
 
     # Check for 50 ad milestone bonus
     if new_ads_viewed % 50 == 0:
-        new_earnings += 0.1 # Bonus for every 50 ads
+        new_earnings += 0.50 # Bonus for every 50 ads: $0.50 TON
 
     # Handle referral commission
     if user['referrer_id']:
@@ -262,8 +387,9 @@ def withdraw() -> tuple[Dict[str, Any], int] | Dict[str, Any]:
     message = (
         f"<b>New Withdrawal Request!</b>\n"
         f"User: {user['first_name'] or user['username']} (ID: {user['telegram_id']})\n"
-        f"Amount: {withdrawal_amount:.4f}\n"
+        f"Amount: {withdrawal_amount:.4f} TON\n"
         f"TON Wallet: <code>{ton_wallet_address}</code>\n"
+        f"⏳ Status: Pending\n"
         f"Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
     )
     send_telegram_message(TELEGRAM_ADMIN_CHAT_ID, message)
@@ -285,6 +411,81 @@ def withdraw() -> tuple[Dict[str, Any], int] | Dict[str, Any]:
         }
     })
 
+@app.route('/api/logout', methods=['POST'])
+def logout() -> tuple[Dict[str, Any], int]:
+    session.pop('user_id', None)
+    return jsonify({"success": True, "message": "Logged out successfully"}), 200
+
+@app.route('/api/admin/users', methods=['GET'])
+@admin_required
+def admin_get_users() -> tuple[Dict[str, Any], int]:
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    search_term = request.args.get('search', '')
+
+    if search_term:
+        users = cursor.execute(
+            "SELECT * FROM users WHERE username LIKE ? OR telegram_id LIKE ?",
+            (f"%{search_term}%", f"%{search_term}%")
+        ).fetchall()
+    else:
+        users = cursor.execute("SELECT * FROM users").fetchall()
+    
+    conn.close()
+    return jsonify({"success": True, "users": [dict(user) for user in users]}), 200
+
+@app.route('/api/admin/withdrawals', methods=['GET'])
+@admin_required
+def admin_get_withdrawals() -> tuple[Dict[str, Any], int]:
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    search_term = request.args.get('search', '')
+
+    if search_term:
+        # Join with users table to get username for search
+        withdrawals = cursor.execute(
+            """
+            SELECT w.*, u.username, u.first_name
+            FROM withdrawals w
+            JOIN users u ON w.user_id = u.id
+            WHERE u.username LIKE ? OR w.ton_wallet_address LIKE ?
+            """,
+            (f"%{search_term}%", f"%{search_term}%")
+        ).fetchall()
+    else:
+        withdrawals = cursor.execute(
+            """
+            SELECT w.*, u.username, u.first_name
+            FROM withdrawals w
+            JOIN users u ON w.user_id = u.id
+            """
+        ).fetchall()
+    
+    conn.close()
+    return jsonify({"success": True, "withdrawals": [dict(w) for w in withdrawals]}), 200
+
+@app.route('/api/admin/withdrawals/<int:withdrawal_id>/<status>', methods=['POST'])
+@admin_required
+def admin_update_withdrawal_status(withdrawal_id: int, status: str) -> tuple[Dict[str, Any], int]:
+    if status not in ['completed', 'rejected']:
+        return jsonify({"success": False, "message": "Invalid status"}), 400
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        "UPDATE withdrawals SET status = ? WHERE id = ?",
+        (status, withdrawal_id)
+    )
+    conn.commit()
+    conn.close()
+
+    # Optionally, notify the user via Telegram about the withdrawal status change
+    # For this, you'd need to fetch user_id from the withdrawal and then their telegram_id
+    # This is a future enhancement.
+
+    return jsonify({"success": True, "message": f"Withdrawal {withdrawal_id} marked as {status}"}), 200
+
 @app.after_request
 def add_security_headers(response):
     response.headers['Content-Security-Policy'] = "frame-ancestors 'self' https://oauth.telegram.org http://127.0.0.1:5000;"
@@ -292,4 +493,4 @@ def add_security_headers(response):
 
 if __name__ == '__main__':
     init_db()
-    app.run(debug=True)
+    app.run(host='0.0.0.0', port=5000, debug=True)

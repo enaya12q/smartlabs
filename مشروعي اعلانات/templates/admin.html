@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - Smart Coin Labs</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+    <header>
+        <h1>Smart Coin Labs Admin Panel</h1>
+        <nav>
+            <a href="{{ url_for('index') }}">Home</a>
+            <a href="{{ url_for('dashboard') }}">Dashboard</a>
+            <a href="{{ url_for('admin_panel') }}">Admin</a>
+            <button id="admin-logout-button">Logout</button>
+        </nav>
+    </header>
+
+    <main>
+        <section id="admin-content">
+            <h2>Admin Dashboard</h2>
+
+            <div class="admin-section">
+                <h3>Users</h3>
+                <input type="text" id="user-search-input" placeholder="Search users by username or ID">
+                <button id="user-search-button">Search</button>
+                <table id="users-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Telegram ID</th>
+                            <th>Username</th>
+                            <th>First Name</th>
+                            <th>Earnings</th>
+                            <th>Ads Viewed</th>
+                            <th>Referral Code</th>
+                            <th>Referrer ID</th>
+                            <th>Created At</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- User data will be loaded here by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="admin-section">
+                <h3>Withdrawal Requests</h3>
+                <input type="text" id="withdrawal-search-input" placeholder="Search withdrawals by username or wallet">
+                <button id="withdrawal-search-button">Search</button>
+                <table id="withdrawals-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>User ID</th>
+                            <th>Username</th>
+                            <th>Amount</th>
+                            <th>TON Wallet</th>
+                            <th>Status</th>
+                            <th>Created At</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Withdrawal data will be loaded here by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2025 Smart Coin Labs Admin</p>
+    </footer>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+    <script src="{{ url_for('static', filename='admin_script.js') }}"></script>
+</body>
+
+</html>

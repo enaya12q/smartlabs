@@ -11,6 +11,13 @@
 <body>
     <header>
         <h1>Smart Coin Labs</h1>
+        <nav>
+            <a href="{{ url_for('index') }}">Home</a>
+            <a href="{{ url_for('about') }}">About Us</a>
+            <a href="{{ url_for('whitepaper') }}">Whitepaper</a>
+            <a href="{{ url_for('privacy_policy') }}">Privacy Policy</a>
+            <div id="nav-dashboard-link"></div>
+        </nav>
     </header>
 
     <main>
@@ -19,44 +26,36 @@
             <div id="telegram-login-button"></div>
         </section>
 
-        <section id="dashboard" style="display: none;">
-            <h2>Welcome, <span id="username"></span>!</h2>
-            <p>Your Earnings: <span id="user-earnings">0.0000</span></p>
-            <p>Ads Viewed: <span id="ads-viewed">0</span></p>
-            <p>Referral Link: <span id="referral-link"></span></p>
+        <!-- The dashboard content will be loaded from the /dashboard route -->
+        <!-- This section will be removed as the dashboard has its own page -->
 
-            <div class="actions">
-                <button id="view-ad-button">View Ad</button>
-                <button id="withdraw-button">Withdraw</button>
+        <div id="ad-display" style="display: none;">
+            <h3>Ad Content Here</h3>
+            <div id="ad-slot-1">
+                <script type="text/javascript">
+                    atOptions = {
+                        'key': '68f5e70ffdb68a2103b40f3fc23caa60',
+                        'format': 'iframe',
+                        'height': 300,
+                        'width': 160,
+                        'params': {}
+                    };
+                </script>
+                <script type="text/javascript"
+                    src="//www.highperformanceformat.com/68f5e70ffdb68a2103b40f3fc23caa60/invoke.js"></script>
             </div>
+            <div id="ad-slot-2">
+                <script type='text/javascript'
+                    src='//pl27588635.revenuecpmgate.com/e4/06/54/e40654054912ec87321f8ae7b5b8475e.js'></script>
+            </div>
+            <button id="close-ad-button">Close Ad</button>
+        </div>
 
-            <div id="ad-display" style="display: none;">
-                <h3>Ad Content Here</h3>
-                <div id="ad-slot-1">
-                    <script type="text/javascript">
-                        atOptions = {
-                            'key': '68f5e70ffdb68a2103b40f3fc23caa60',
-                            'format': 'iframe',
-                            'height': 300,
-                            'width': 160,
-                            'params': {}
-                        };
-                    </script>
-                    <script type="text/javascript"
-                        src="//www.highperformanceformat.com/68f5e70ffdb68a2103b40f3fc23caa60/invoke.js"></script>
-                </div>
-                <div id="ad-slot-2">
-                    <script type='text/javascript'
-                        src='//pl27588635.revenuecpmgate.com/e4/06/54/e40654054912ec87321f8ae7b5b8475e.js'></script>
-                </div>
-                <button id="close-ad-button">Close Ad</button>
-            </div>
-
-            <div id="withdrawal-form" style="display: none;">
-                <h3>Withdraw Funds</h3>
-                <input type="text" id="ton-wallet-address" placeholder="Enter TON Wallet Address">
-                <button id="submit-withdrawal">Submit Withdrawal</button>
-            </div>
+        <div id="withdrawal-form" style="display: none;">
+            <h3>Withdraw Funds</h3>
+            <input type="text" id="ton-wallet-address" placeholder="Enter TON Wallet Address">
+            <button id="submit-withdrawal">Submit Withdrawal</button>
+        </div>
         </section>
     </main>
 
@@ -65,7 +64,7 @@
     </footer>
 
     <script src="{{ url_for('static', filename='script.js') }}"></script>
-    <script async src="https://telegram.org/js/telegram-widget.js?2" data-telegram-login="SMARTLAB3Sbot"
+    <script async src="https://telegram.org/js/telegram-widget.js?2" data-telegram-login="{{ bot_username }}"
         data-size="large" data-onauth="onTelegramAuth(user)" data-request-access="write"></script>
 </body>
 
