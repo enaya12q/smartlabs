@@ -8,6 +8,7 @@ from flask import Flask, request, jsonify, render_template, session, url_for, re
 from datetime import datetime
 from typing import Dict, Any, Optional
 from functools import wraps # Import wraps for decorator
+import asyncio # Import asyncio for running async functions in a sync context
 from telegram import Bot, Update
 from telegram.ext import Application, CommandHandler, ContextTypes
 
@@ -67,7 +68,7 @@ with app.app_context():
     init_db()
 
 # --- Telegram Bot Functions ---
-def send_telegram_message(chat_id: str, message: str) -> Optional[Dict[str, Any]]:
+async def send_telegram_message(chat_id: str, message: str) -> Optional[Dict[str, Any]]:
     url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
     payload = {
         'chat_id': chat_id,
@@ -75,7 +76,10 @@ def send_telegram_message(chat_id: str, message: str) -> Optional[Dict[str, Any]
         'parse_mode': 'HTML'
     }
     try:
-        response = requests.post(url, json=payload)
+        # Using requests.post is synchronous, for a fully async app, aiohttp would be preferred.
+        # However, for simplicity and to avoid adding new dependencies, we'll keep requests for now.
+        # In an async context, this will block the event loop.
+        response = await asyncio.to_thread(requests.post, url, json=payload)
         response.raise_for_status()
         return response.json()
     except requests.exceptions.RequestException as e:
@@ -182,7 +186,7 @@ def telegram_login() -> tuple[Dict[str, Any], int] | Dict[str, Any]:
         conn.commit()
         user = cursor.execute("SELECT * FROM users WHERE telegram_id = ?", (telegram_id,)).fetchone()
         admin_message = f"New user registered: {username or first_name} (ID: {telegram_id})"
-        send_telegram_message(TELEGRAM_ADMIN_CHAT_ID, admin_message)
+        await send_telegram_message(TELEGRAM_ADMIN_CHAT_ID, admin_message)
 
         welcome_message = (
             "👋 Welcome to Smart Coin Labs!\n"
@@ -190,7 +194,7 @@ def telegram_login() -> tuple[Dict[str, Any], int] | Dict[str, Any]:
             "💎 Earn $0.50 TON for every 50 ads watched!\n"
             "Click /start to begin now."
         )
-        send_telegram_message(str(telegram_id), welcome_message)
+        await send_telegram_message(str(telegram_id), welcome_message)
     else:
         # Existing user login, update details if necessary
         cursor.execute(
@@ -269,7 +273,7 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         )
         conn.commit()
         admin_message = f"New user registered via bot: {user_username or user_first_name} (ID: {user_telegram_id})"
-        send_telegram_message(TELEGRAM_ADMIN_CHAT_ID, admin_message)
+        await send_telegram_message(TELEGRAM_ADMIN_CHAT_ID, admin_message)
 
     welcome_message = (
         "👋 Welcome to Smart Coin Labs!\n"
@@ -391,7 +395,7 @@ def withdraw() -> tuple[Dict[str, Any], int] | Dict[str, Any]:
         f"⏳ Status: Pending\n"
         f"Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
     )
-    send_telegram_message(TELEGRAM_ADMIN_CHAT_ID, message)
+    await send_telegram_message(TELEGRAM_ADMIN_CHAT_ID, message)
 
     updated_user = cursor.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
     conn.close()
