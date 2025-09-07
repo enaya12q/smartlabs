@@ -9,7 +9,7 @@ from datetime import datetime
 from typing import Dict, Any, Optional
 from functools import wraps # Import wraps for decorator
 from telegram import Bot, Update
-from telegram.ext import Dispatcher, CommandHandler, CallbackContext
+from telegram.ext import Application, CommandHandler, ContextTypes
 
 # --- Configuration ---
 TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "YOUR_TELEGRAM_BOT_TOKEN_HERE")
@@ -244,10 +244,9 @@ def get_user_data() -> tuple[Dict[str, Any], int] | Dict[str, Any]:
     })
 
 # --- Telegram Bot Webhook ---
-bot = Bot(TELEGRAM_BOT_TOKEN)
-dispatcher = Dispatcher(bot, None, workers=0)
+application = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
 
-def start_command(update: Update, context: CallbackContext) -> None:
+async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not update.effective_user:
         print("No effective user in update.")
         return
@@ -278,15 +277,15 @@ def start_command(update: Update, context: CallbackContext) -> None:
         "💎 Earn $0.50 TON for every 50 ads watched!\n"
         "Click /start to begin now."
     )
-    send_telegram_message(str(user_telegram_id), welcome_message)
+    # Use context.bot.send_message for async operations
+    await context.bot.send_message(chat_id=user_telegram_id, text=welcome_message)
     conn.close()
 
-dispatcher.add_handler(CommandHandler("start", start_command))
+application.add_handler(CommandHandler("start", start_command))
 
 @app.route('/telegram-webhook', methods=['POST'])
-def telegram_webhook() -> tuple[Dict[str, Any], int]:
-    update = Update.de_json(request.get_json(force=True), bot)
-    dispatcher.process_update(update)
+async def telegram_webhook() -> tuple[Dict[str, Any], int]:
+    await application.update_queue.put(Update.de_json(request.get_json(force=True), application.bot))
     return jsonify({"status": "ok"}), 200
 
 @app.route('/api/view_ad', methods=['POST'])
