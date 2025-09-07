@@ -96,6 +96,10 @@ def generate_referral_code(telegram_id: int) -> str:
 def index() -> str:
     return render_template('index.html', bot_username=TELEGRAM_BOT_USERNAME)
 
+@app.route('/test')
+def test_route() -> str:
+    return "Test route is working!"
+
 @app.route('/about')
 def about() -> str:
     return render_template('about.html')
